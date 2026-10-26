@@ -2,6 +2,7 @@ import { activityDateKey, buildActivityItems } from "@taiwan-fin-hub/shared";
 import { createQuery } from "@tanstack/svelte-query";
 import type { ApiClient } from "@/shared/api/client";
 import { exchangeRatesQuery } from "@/data/assets/queries";
+import { invoiceSellerPaymentsQuery } from "@/data/invoices/seller-payments";
 import { bankRangeQuery, creditCardBillsRangeQuery } from "@/data/bank/queries";
 import {
   invoiceTransactionMappingsQuery,
@@ -43,6 +44,7 @@ export function createPeriodData(getApi: () => ApiClient) {
   );
   const rates = createQuery(() => exchangeRatesQuery(getApi));
   const bills = createQuery(() => creditCardBillsRangeQuery(getApi, range));
+  const sellerPayments = createQuery(() => invoiceSellerPaymentsQuery(getApi));
 
   const rateValues = $derived(rateMap(rates.data));
   const items = $derived.by(() => {
@@ -71,7 +73,10 @@ export function createPeriodData(getApi: () => ApiClient) {
       matches,
     );
   });
-  const summaries = $derived(summarizePeriods(items, periodKeys, rateValues));
+  const cardSellers = $derived(new Set(sellerPayments.data?.cardSellers));
+  const summaries = $derived(
+    summarizePeriods(items, periodKeys, rateValues, cardSellers),
+  );
   const accountOfTransaction = $derived(
     new Map(
       (bank.data?.transactions ?? []).map((transaction) => [

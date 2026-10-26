@@ -622,6 +622,15 @@
         "alert_key": "推播種類與門檻的識別字串。",
         "sent_at": "推播送出的時間。"
       }
+    },
+    "invoice_seller_payments": {
+      "description": "使用者標記為「通常刷卡」的發票店家，月份收支不把這些店家的未配對發票列為現金用途。",
+      "notes": "一家店一筆；取消標記時刪除資料列。",
+      "columns": {
+        "seller_name": "發票上的賣方名稱，與 invoices.seller_name 相同。",
+        "method": "付款方式，目前只有 card。",
+        "updated_at": "最後更新的時間。"
+      }
     }
   }
 }

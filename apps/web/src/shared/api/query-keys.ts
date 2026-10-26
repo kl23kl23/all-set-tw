@@ -30,6 +30,7 @@ export const queryKeys = {
   syncSchedule: ["sync-schedule"] as const,
   notifications: ["notifications"] as const,
   budgets: ["budgets"] as const,
+  invoiceSellerPayments: ["invoice-seller-payments"] as const,
   classificationCategories: ["classification-categories"] as const,
   classificationRules: ["classification-rules"] as const,
   aiClassification: ["ai-classification"] as const,

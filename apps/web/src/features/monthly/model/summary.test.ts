@@ -268,9 +268,40 @@ describe("cash invoices", () => {
   });
 
   it("groups cash invoices by seller", () => {
-    expect(cashInvoiceSellers(october.cashInvoices, {})).toEqual([
-      { seller: "禾富加油站股份有限公司", count: 1, amount: 1109 },
-      { seller: "全家便利商店股份有限公司", count: 2, amount: 95 },
+    const sellers = cashInvoiceSellers(october.cashInvoices, {});
+    expect(
+      sellers.map(({ seller, count, amount }) => [seller, count, amount]),
+    ).toEqual([
+      ["禾富加油站股份有限公司", 1, 1109],
+      ["全家便利商店股份有限公司", 2, 95],
     ]);
+    expect(sellers[1]!.invoices.map((row) => row.id)).toEqual(["i1", "i2"]);
+  });
+});
+
+describe("card sellers", () => {
+  it("keeps invoices from sellers marked as card out of cash", () => {
+    const october = summarizePeriods(
+      [
+        item({
+          id: "m1",
+          source: "invoice",
+          amount: 238,
+          title: "和德昌股份有限公司",
+        }),
+        item({
+          id: "f1",
+          source: "invoice",
+          amount: 55,
+          title: "全家便利商店股份有限公司",
+        }),
+      ],
+      ["2026-10"],
+      {},
+      new Set(["和德昌股份有限公司"]),
+    ).get("2026-10")!;
+    expect(october.cashInvoices.map((row) => row.id)).toEqual(["f1"]);
+    expect(october.cardSellerInvoices.map((row) => row.id)).toEqual(["m1"]);
+    expect(october.expense).toBe(0);
   });
 });

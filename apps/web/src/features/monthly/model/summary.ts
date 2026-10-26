@@ -46,18 +46,23 @@ export interface PeriodSummary {
    */
   cashInvoices: ActivityItem[];
   cashInvoiceTotal: number;
+  /** Unmatched invoices from sellers marked as usually paid by card. */
+  cardSellerInvoices: ActivityItem[];
 }
 
 export interface CashInvoiceSeller {
   seller: string;
   count: number;
   amount: number;
+  /** Newest first. */
+  invoices: ActivityItem[];
 }
 
 export function summarizePeriods(
   items: ActivityItem[],
   keys: string[],
   rates: Record<string, number>,
+  cardSellers: ReadonlySet<string> = new Set(),
 ): Map<string, PeriodSummary> {
   const grouped = new Map<string, ActivityItem[]>(keys.map((key) => [key, []]));
   for (const item of items) {
@@ -69,9 +74,14 @@ export function summarizePeriods(
       const setAside: SetAsideRow[] = [];
       const counted: ActivityItem[] = [];
       const cashInvoices: ActivityItem[] = [];
+      const cardSellerInvoices: ActivityItem[] = [];
       for (const item of grouped.get(key)!) {
         if (item.source === "invoice") {
-          cashInvoices.push(item);
+          // A card-paid invoice counts once its card entry syncs, not as cash.
+          (cardSellers.has(item.title)
+            ? cardSellerInvoices
+            : cashInvoices
+          ).push(item);
           continue;
         }
         const kind = setAsideKind(item);
@@ -118,6 +128,7 @@ export function summarizePeriods(
           spending,
           setAside,
           cashInvoices,
+          cardSellerInvoices,
           cashInvoiceTotal: cashInvoices.reduce(
             (sum, item) => sum + activityFlowAmountTwd(item, "expense", rates),
             0,
@@ -150,10 +161,14 @@ export function cashInvoiceSellers(
       seller: item.title,
       count: 0,
       amount: 0,
+      invoices: [],
     };
     seller.count += 1;
+    seller.invoices.push(item);
     seller.amount += activityFlowAmountTwd(item, "expense", rates);
     sellers.set(item.title, seller);
   }
+  for (const seller of sellers.values())
+    seller.invoices.sort((a, b) => b.date.localeCompare(a.date));
   return [...sellers.values()].sort((a, b) => b.amount - a.amount);
 }

@@ -8,10 +8,10 @@
 
 ## 目錄
 
-- Tables：37
+- Tables：38
 - Explicit indexes：47
 - Other objects：0
-- Migrations：64
+- Migrations：65
 
 ## Tables
 
@@ -35,6 +35,7 @@
 | [`investment_positions`](#investment_positions) | 投資帳戶在特定日期的持倉與資產市值快照。 | 14 | 0 | 4 |
 | [`investment_transactions`](#investment_transactions) | 投資帳戶的買賣、配息或其他證券交易明細。 | 22 | 0 | 3 |
 | [`invoice_line_items`](#invoice_line_items) | 電子發票底下的商品或服務明細。 | 13 | 1 | 2 |
+| [`invoice_seller_payments`](#invoice_seller_payments) | 使用者標記為「通常刷卡」的發票店家，月份收支不把這些店家的未配對發票列為現金用途。 | 3 | 0 | 0 |
 | [`invoice_transaction_preferences`](#invoice_transaction_preferences) | 使用者對電子發票與銀行交易是否關聯的決策。 | 5 | 2 | 2 |
 | [`invoices`](#invoices) | 電子發票的抬頭與總額主檔。 | 10 | 0 | 2 |
 | [`manual_assets`](#manual_assets) | 使用者手動登錄、無法由銀行或投資連接器同步的資產。 | 6 | 0 | 0 |
@@ -1042,6 +1043,38 @@ CREATE TABLE "invoice_line_items" (
 )
 ```
 
+### `invoice_seller_payments`
+
+> 用途：使用者標記為「通常刷卡」的發票店家，月份收支不把這些店家的未配對發票列為現金用途。
+> 注意：一家店一筆；取消標記時刪除資料列。
+
+#### Columns
+
+| 順序 | 欄位 | 意義 | SQLite type | 可為 NULL | 預設值 | PK 順序 | Generated |
+| ---: | --- | --- | --- | :---: | --- | ---: | --- |
+| 1 | `seller_name` | 發票上的賣方名稱，與 invoices.seller_name 相同。 | TEXT | NO | — | 1 | — |
+| 2 | `method` | 付款方式，目前只有 card。 | TEXT | NO | — | — | — |
+| 3 | `updated_at` | 最後更新的時間。 | TEXT | NO | — | — | — |
+
+#### Foreign keys
+
+—
+
+#### Indexes
+
+—
+
+#### DDL
+
+```sql
+CREATE TABLE invoice_seller_payments (
+  seller_name TEXT NOT NULL,
+  method TEXT NOT NULL CHECK (method IN ('card')),
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (seller_name)
+)
+```
+
 ### `invoice_transaction_preferences`
 
 > 用途：使用者對電子發票與銀行交易是否關聯的決策。
@@ -1982,6 +2015,7 @@ Migration 是 schema 演進的 source of truth；若要了解某欄位的變更�
 - [`0064_payment_accounts.sql`](../apps/worker/migrations/0064_payment_accounts.sql)
 - [`0065_ubot_sync_job.sql`](../apps/worker/migrations/0065_ubot_sync_job.sql)
 - [`0066_spending_budgets.sql`](../apps/worker/migrations/0066_spending_budgets.sql)
+- [`0067_invoice_seller_payments.sql`](../apps/worker/migrations/0067_invoice_seller_payments.sql)
 
 ## 程式碼導覽
 

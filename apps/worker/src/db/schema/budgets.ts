@@ -26,3 +26,13 @@ export const spendingBudgetAlerts = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.period, table.alertKey] })],
 );
+
+export const invoiceSellerPayments = sqliteTable(
+  "invoice_seller_payments",
+  {
+    sellerName: text("seller_name").notNull(),
+    method: text("method").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.sellerName] })],
+);

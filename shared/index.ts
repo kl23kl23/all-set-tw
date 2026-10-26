@@ -7,6 +7,7 @@ export * from "./api/connectors";
 export * from "./api/dashboard";
 export * from "./api/notifications";
 export * from "./api/budgets";
+export * from "./api/invoice-seller-payments";
 export * from "./api/sync";
 export * from "./api/sync-reports";
 export * from "./activity/types";
