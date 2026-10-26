@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ActivityItem } from "@taiwan-fin-hub/shared";
-import { rankCategories, summarizePeriods } from "./summary";
+import { rankCategories, setAsideKind, summarizePeriods } from "./summary";
 
 function item(overrides: Partial<ActivityItem>): ActivityItem {
   return {
@@ -90,5 +90,137 @@ describe("period summary", () => {
       { category: "餐飲", total: 700 },
       { category: "交通", total: 300 },
     ]);
+  });
+});
+
+describe("bank wording", () => {
+  const rows = [
+    item({
+      id: "p1",
+      source: "bank",
+      amount: -60010,
+      title: "全國繳費 · 繳聯邦信用卡",
+      category: "未分類",
+      categoryId: "other",
+    }),
+    item({
+      id: "p2",
+      source: "bank",
+      amount: -20000,
+      title: "卡費",
+      category: "轉帳",
+      categoryId: "transfer",
+    }),
+    item({
+      id: "p3",
+      source: "card",
+      amount: 73373,
+      title: "網銀行動繳",
+      category: "未分類",
+      categoryId: "other",
+    }),
+    item({
+      id: "p4",
+      source: "card",
+      amount: -66018,
+      title: "ＣＵＢＥＡｐｐ跨轉繳款",
+      category: "未分類",
+      categoryId: "other",
+    }),
+    item({
+      id: "c1",
+      source: "bank",
+      amount: -10000,
+      title: "ATM現金 · 台新國際商業銀行",
+      category: "轉帳",
+      categoryId: "transfer",
+    }),
+    item({
+      id: "f1",
+      source: "bank",
+      amount: -2500,
+      title: "手機轉帳 · ****3382 給阿嬤買好吃的",
+      category: "轉帳",
+      categoryId: "transfer",
+    }),
+    item({
+      id: "t1",
+      source: "bank",
+      amount: -50000,
+      title: "手機轉帳 · ****8404貨款",
+      category: "轉帳",
+      categoryId: "transfer",
+    }),
+    ...Array.from({ length: 4 }, (_, n) =>
+      item({
+        id: `w${n}`,
+        amount: -550,
+        title: "全盈支付－全家",
+        category: "未分類",
+        categoryId: "other",
+      }),
+    ),
+    item({
+      id: "w9",
+      date: "2026-10-21",
+      amount: -550,
+      title: "全盈支付－全家",
+      category: "未分類",
+      categoryId: "other",
+    }),
+  ];
+  const october = summarizePeriods(rows, ["2026-10"], {}).get("2026-10")!;
+  const kinds = Object.fromEntries(
+    october.setAside.map((row) => [row.item.id, row.kind]),
+  );
+
+  it("sets card bill payments aside whatever the bank calls them", () => {
+    expect(kinds).toMatchObject({ p1: "card-payment", p2: "card-payment" });
+    expect(setAsideKind(rows[2]!)).toBe("card-payment");
+    expect(setAsideKind(rows[3]!)).toBe("card-payment");
+    for (const title of ["富邦", "富邦１３１０１", "聯邦３４５８０１ "])
+      expect(
+        setAsideKind(
+          item({ source: "bank", amount: -100, title, categoryId: "other" }),
+        ),
+      ).toBe("card-payment");
+    expect(
+      setAsideKind(
+        item({
+          source: "bank",
+          amount: -100,
+          title: "富邦momo購物",
+          categoryId: "other",
+        }),
+      ),
+    ).toBeNull();
+    expect(
+      setAsideKind(
+        item({
+          source: "bank",
+          amount: -500,
+          title: "LINE Pay Money",
+          categoryId: "other",
+        }),
+      ),
+    ).toBe("top-up");
+    expect(october.cardPayment).toBe(60010 + 20000);
+    expect(
+      october.setAside.some(
+        (row) => row.item.source === "card" && row.kind === "card-payment",
+      ),
+    ).toBe(false);
+  });
+
+  it("counts cash and family transfers but sets other transfers aside", () => {
+    expect(kinds.t1).toBe("transfer");
+    expect(october.byCategory.get("現金提領")).toBe(10000);
+    expect(october.byCategory.get("轉給家人")).toBe(2500);
+  });
+
+  it("treats a run of identical wallet charges as top-ups", () => {
+    expect(october.topUp).toBe(2200);
+    expect(october.byCategory.get("未分類")).toBe(550);
+    expect(october.expense).toBe(10000 + 2500 + 550);
   });
 });

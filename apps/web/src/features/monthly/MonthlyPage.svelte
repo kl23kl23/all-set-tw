@@ -30,6 +30,7 @@
     investment: "股市",
     "top-up": "電子支付儲值",
     "card-payment": "繳信用卡費",
+    transfer: "轉帳",
   };
   const DETAIL_FILTERS: SpendingFilter[] = [
     {
@@ -190,7 +191,9 @@
         >
           {formatCurrency(summary.expense)}
         </p>
-        <p class="mt-1 text-caption text-subtle">不含投資交割、儲值、繳卡費</p>
+        <p class="mt-1 text-caption text-subtle">
+          不含股市、儲值、繳卡費、轉帳
+        </p>
       </div>
       <div class="rounded-xl border border-ink/10 p-4">
         <p class="text-caption text-subtle">每期平均</p>
@@ -349,7 +352,8 @@
     <section class="min-w-0 border-t border-ink/10 pt-5">
       <h2 class="text-base font-semibold">另列項目</h2>
       <p class="mt-1 text-caption text-subtle">
-        股市交割與抽籤、電子支付儲值與信用卡繳款只是把錢移到別處，不算進其他開銷
+        股市交割與抽籤、電子支付儲值、信用卡繳款與沒寫用途的轉帳只是把錢移到別處，不算進其他開銷；ATM
+        領現金與轉給家人的錢算開銷
       </p>
       {#if summary.setAside.length === 0}
         <p class="mt-3 text-sm text-subtle">本期沒有另列項目。</p>
