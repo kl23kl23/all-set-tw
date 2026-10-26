@@ -1,4 +1,10 @@
-import { BarChart3, History, Settings, Wallet } from "@lucide/svelte";
+import {
+  BarChart3,
+  CalendarRange,
+  History,
+  Settings,
+  Wallet,
+} from "@lucide/svelte";
 import type { Component } from "svelte";
 import type { DetailView, MobileSettingsView, PrimaryView } from "./types";
 
@@ -28,6 +34,13 @@ export const navItems: NavigationItem[] = [
     icon: Wallet,
   },
   {
+    view: "monthly",
+    label: "月份收支",
+    shortLabel: "月收支",
+    description: "每月 15 日結算的收支統計與分類明細。",
+    icon: CalendarRange,
+  },
+  {
     view: "activity",
     label: "活動",
     shortLabel: "活動",
@@ -46,6 +59,7 @@ export const navItems: NavigationItem[] = [
 export const mobilePrimaryViews: PrimaryView[] = [
   "overview",
   "assets",
+  "monthly",
   "activity",
 ];
 

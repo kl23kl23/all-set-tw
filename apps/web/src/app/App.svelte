@@ -29,9 +29,15 @@
 
   type LazyView = Exclude<View, "overview">;
   type PageKey =
-    "assets" | "activity" | "investments" | "manual-assets" | "settings";
+    | "assets"
+    | "monthly"
+    | "activity"
+    | "investments"
+    | "manual-assets"
+    | "settings";
   type LazyPageModule =
     | typeof import("@/features/assets/AssetsPage.svelte")
+    | typeof import("@/features/monthly/MonthlyPage.svelte")
     | typeof import("@/features/activity/ActivityPage.svelte")
     | typeof import("@/features/assets/Investments.svelte")
     | typeof import("@/features/assets/ManualAssets.svelte")
@@ -39,6 +45,7 @@
 
   const pageLoaders = {
     assets: () => import("@/features/assets/AssetsPage.svelte"),
+    monthly: () => import("@/features/monthly/MonthlyPage.svelte"),
     activity: () => import("@/features/activity/ActivityPage.svelte"),
     investments: () => import("@/features/assets/Investments.svelte"),
     "manual-assets": () => import("@/features/assets/ManualAssets.svelte"),
@@ -74,6 +81,7 @@
   function pageKey(next: LazyView): PageKey {
     if (
       next === "assets" ||
+      next === "monthly" ||
       next === "activity" ||
       next === "investments" ||
       next === "manual-assets"
@@ -295,6 +303,10 @@
                 {@const Page =
                   module.default as typeof import("@/features/assets/AssetsPage.svelte").default}
                 <Page {api} />
+              {:else if view === "monthly"}
+                {@const Page =
+                  module.default as typeof import("@/features/monthly/MonthlyPage.svelte").default}
+                <Page {api} />
               {:else if view === "activity"}
                 {@const Page =
                   module.default as typeof import("@/features/activity/ActivityPage.svelte").default}
@@ -348,7 +360,7 @@
 
     <nav
       aria-label="主要導覽"
-      class="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 gap-1 border-t border-ink/10 bg-inverse px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 text-white shadow-[0_-8px_28px_rgba(31,41,51,0.12)] md:hidden"
+      class="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 gap-1 border-t border-ink/10 bg-inverse px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 text-white shadow-[0_-8px_28px_rgba(31,41,51,0.12)] md:hidden"
     >
       {#each mobilePrimaryViews as mobileView (mobileView)}
         {@const item = navItems.find(

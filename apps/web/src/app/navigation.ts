@@ -3,6 +3,7 @@ import type { View } from "./types";
 const views = new Set<View>([
   "overview",
   "assets",
+  "monthly",
   "activity",
   "settings",
   "about",
