@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0"
+    />
+    <meta name="theme-color" content="#f8fafc" />
+    <style>
+      /* Apply before app CSS/JS loads, including the PWA scroll container. */
+      html,
+      body,
+      #root {
+        touch-action: manipulation;
+      }
+    </style>
+    <script>
+      // 在 app CSS/JS 載入前套用主題，避免深色主題先閃一下淺色；規則同 src/shared/theme/theme.ts。
+      try {
+        var preference = localStorage.getItem("taiwan-fin-hub-theme");
+        var dark =
+          preference === "dark" ||
+          (preference !== "light" &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        if (dark) {
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute("content", "#111827");
+        }
+      } catch (error) {}
+    </script>
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16" />
+    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <title>不用記帳 | ALL SET</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
