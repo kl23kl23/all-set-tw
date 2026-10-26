@@ -24,9 +24,9 @@ function item(overrides: Partial<ActivityItem>): ActivityItem {
 
 describe("period summary", () => {
   const items = [
-    item({ id: "a", date: "2026-10-14", amount: -300, category: "交通" }),
-    item({ id: "b", date: "2026-10-15", amount: -500 }),
-    item({ id: "c", date: "2026-10-20", amount: -200 }),
+    item({ id: "a", date: "2026-10-19", amount: -300, category: "交通" }),
+    item({ id: "b", date: "2026-10-20", amount: -500 }),
+    item({ id: "c", date: "2026-10-25", amount: -200 }),
     item({ id: "d", date: "2026-10-25", amount: 50000, category: "薪資" }),
     item({
       id: "e",
@@ -73,7 +73,7 @@ describe("period summary", () => {
   ];
   const summaries = summarizePeriods(items, ["2026-09", "2026-10"], {});
 
-  it("splits spending by the 15th", () => {
+  it("splits spending by the 20th", () => {
     expect(summaries.get("2026-09")!.expense).toBe(300);
     expect(summaries.get("2026-10")!.expense).toBe(700);
     expect(summaries.get("2026-10")!.income).toBe(50000);

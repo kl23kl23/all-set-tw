@@ -45,7 +45,7 @@
 | [`scheduled_sync_batch_results`](#scheduled_sync_batch_results) | 預設排程同步批次中各工作的完成結果。 | 9 | 1 | 0 |
 | [`scheduled_sync_batches`](#scheduled_sync_batches) | 各排程同步批次的狀態與同步前後資產、信用卡及貸款負債快照。 | 14 | 0 | 2 |
 | [`spending_budget_alerts`](#spending_budget_alerts) | 已送出的額度推播紀錄，避免同一期重複通知。 | 3 | 0 | 0 |
-| [`spending_budgets`](#spending_budgets) | 每月額度設定：信用卡刷卡與銀行帳戶支出各一筆，期別為每月 15 日起算。 | 3 | 0 | 0 |
+| [`spending_budgets`](#spending_budgets) | 每月額度設定：信用卡刷卡與銀行帳戶支出各一筆，期別為每月 20 日起算。 | 3 | 0 | 0 |
 | [`sync_activity_changes`](#sync_activity_changes) | 與金融資料 promotion 同一 transaction 保存的新增紀錄與入帳事件。 | 5 | 1 | 0 |
 | [`sync_activity_details`](#sync_activity_details) | 報告完成時沿用活動配對規則產生的活動展示快照。 | 3 | 1 | 0 |
 | [`sync_activity_runs`](#sync_activity_runs) | 同步執行與排程報告的明確關聯，涵蓋原始同步及成功的手動補救。 | 7 | 1 | 1 |
@@ -1436,7 +1436,7 @@ CREATE TABLE "scheduled_sync_batches" (
 
 | 順序 | 欄位 | 意義 | SQLite type | 可為 NULL | 預設值 | PK 順序 | Generated |
 | ---: | --- | --- | --- | :---: | --- | ---: | --- |
-| 1 | `period` | 期別鍵 YYYY-MM，代表該月 15 日至次月 14 日。 | TEXT | NO | — | 1 | — |
+| 1 | `period` | 期別鍵 YYYY-MM，代表該月 20 日至次月 19 日。 | TEXT | NO | — | 1 | — |
 | 2 | `alert_key` | 推播種類與門檻的識別字串。 | TEXT | NO | — | 2 | — |
 | 3 | `sent_at` | 推播送出的時間。 | TEXT | NO | — | — | — |
 
@@ -1461,7 +1461,7 @@ CREATE TABLE spending_budget_alerts (
 
 ### `spending_budgets`
 
-> 用途：每月額度設定：信用卡刷卡與銀行帳戶支出各一筆，期別為每月 15 日起算。
+> 用途：每月額度設定：信用卡刷卡與銀行帳戶支出各一筆，期別為每月 20 日起算。
 > 注意：kind 為 card 或 account；未設定的額度沒有資料列。
 
 #### Columns

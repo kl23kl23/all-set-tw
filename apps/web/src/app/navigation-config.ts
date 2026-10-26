@@ -38,14 +38,14 @@ export const navItems: NavigationItem[] = [
     view: "monthly",
     label: "月份收支",
     shortLabel: "月收支",
-    description: "每月 15 日結算的收支統計與分類明細。",
+    description: "每月 20 日結算的收支統計與分類明細。",
     icon: CalendarRange,
   },
   {
     view: "cards",
     label: "信用卡",
     shortLabel: "信用卡",
-    description: "各卡額度使用、帳單與每月 15 日結算的刷卡明細。",
+    description: "各卡額度使用、帳單與每月 20 日結算的刷卡明細。",
     icon: CreditCard,
   },
   {

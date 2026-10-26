@@ -606,7 +606,7 @@
       }
     },
     "spending_budgets": {
-      "description": "每月額度設定：信用卡刷卡與銀行帳戶支出各一筆，期別為每月 15 日起算。",
+      "description": "每月額度設定：信用卡刷卡與銀行帳戶支出各一筆，期別為每月 20 日起算。",
       "notes": "kind 為 card 或 account；未設定的額度沒有資料列。",
       "columns": {
         "kind": "額度種類：card 為信用卡刷卡，account 為銀行帳戶直接支出。",
@@ -618,7 +618,7 @@
       "description": "已送出的額度推播紀錄，避免同一期重複通知。",
       "notes": "alert_key 例如 card:threshold:5000 或 report:day10。",
       "columns": {
-        "period": "期別鍵 YYYY-MM，代表該月 15 日至次月 14 日。",
+        "period": "期別鍵 YYYY-MM，代表該月 20 日至次月 19 日。",
         "alert_key": "推播種類與門檻的識別字串。",
         "sent_at": "推播送出的時間。"
       }

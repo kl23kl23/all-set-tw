@@ -3,16 +3,16 @@ import { activityDateKey } from "./list";
 import type { ActivityItem } from "./types";
 
 /**
- * Monthly statement periods that start on the 15th, and the rules that decide
+ * Monthly statement periods that start on the 20th, and the rules that decide
  * which activity counts as spending in them. The 月份收支 and 信用卡 pages and
  * the Worker's spending alerts share these so their totals agree.
  */
 
 /** Day of month a period starts; it ends the day before the next one. */
-export const PERIOD_START_DAY = 15;
+export const PERIOD_START_DAY = 20;
 
 export interface StatementPeriod {
-  /** `YYYY-MM` of the month the period starts in, e.g. 2026-10 = 10/15～11/14. */
+  /** `YYYY-MM` of the month the period starts in, e.g. 2026-10 = 10/20～11/19. */
   key: string;
   start: string;
   end: string;

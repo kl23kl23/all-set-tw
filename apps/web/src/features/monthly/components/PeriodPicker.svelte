@@ -5,6 +5,7 @@
   import Button from "@/shared/ui/Button.svelte";
   import Select from "@/shared/ui/Select.svelte";
   import {
+    PERIOD_START_DAY,
     formatPeriodLabel,
     formatPeriodRange,
     statementPeriod,
@@ -66,7 +67,7 @@
       >
     </div>
     <p class="mt-2 flex items-center gap-2 text-caption text-subtle">
-      每月 15 日結算 · {period.start.replaceAll(
+      每月 {PERIOD_START_DAY} 日結算 · {period.start.replaceAll(
         "-",
         "/",
       )}～{period.end.replaceAll("-", "/")}

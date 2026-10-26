@@ -26,7 +26,7 @@ function plan(
 
 describe("budget notifications", () => {
   it("sends only the highest new 5,000 step and records every step it passed", () => {
-    const [card] = plan({ card: 12000, account: 0 }, "2026-10-16T02:00:00Z");
+    const [card] = plan({ card: 12000, account: 0 }, "2026-10-21T02:00:00Z");
     expect(card!.payload.title).toBe("信用卡刷卡已超過 NT$10,000");
     expect(card!.payload.body).toContain("剩 NT$8,000");
     expect(card!.keys).toEqual(["card:threshold:5000", "card:threshold:10000"]);
@@ -40,28 +40,28 @@ describe("budget notifications", () => {
     ];
     const [card] = plan(
       { card: 21000, account: 0 },
-      "2026-10-16T02:00:00Z",
+      "2026-10-21T02:00:00Z",
       sent,
     );
     expect(card!.payload.title).toBe("信用卡刷卡已達每月額度");
     expect(card!.payload.body).toContain("超過 NT$1,000");
     expect(
-      plan({ card: 14000, account: 0 }, "2026-10-16T02:00:00Z", sent),
+      plan({ card: 14000, account: 0 }, "2026-10-21T02:00:00Z", sent),
     ).toEqual([]);
   });
 
   it("reports usage at 20:00 Taipei on period days 10, 20 and 30", () => {
-    // 10/24 19:59 Taipei is before the day-10 report.
-    expect(plan({ card: 0, account: 0 }, "2026-10-24T11:59:00Z")).toEqual([]);
+    // 10/29 19:59 Taipei is before the day-10 report.
+    expect(plan({ card: 0, account: 0 }, "2026-10-29T11:59:00Z")).toEqual([]);
     const [report] = plan(
       { card: 3000, account: 4000 },
-      "2026-10-24T12:00:00Z",
+      "2026-10-29T12:00:00Z",
     );
     expect(report!.keys).toEqual(["report:day10"]);
     expect(report!.payload.body).toBe(
       "信用卡刷卡已用 NT$3,000 / NT$20,000，剩 NT$17,000\n帳戶支出已用 NT$4,000 / NT$10,000，剩 NT$6,000",
     );
-    const [late] = plan({ card: 0, account: 0 }, "2026-11-14T12:30:00Z", [
+    const [late] = plan({ card: 0, account: 0 }, "2026-11-19T12:30:00Z", [
       "report:day10",
     ]);
     expect(late!.keys).toEqual([
@@ -107,7 +107,7 @@ describe("period spending by source", () => {
           amount: -90000,
           categoryId: "investment",
         }),
-        item({ id: "f", source: "card", amount: -500, date: "2026-10-14" }),
+        item({ id: "f", source: "card", amount: -500, date: "2026-10-19" }),
       ],
       "2026-10",
       {},
