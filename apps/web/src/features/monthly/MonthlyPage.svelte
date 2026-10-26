@@ -13,7 +13,10 @@
   import Select from "@/shared/ui/Select.svelte";
   import type { ApiClient } from "@/shared/api/client";
   import { exchangeRatesQuery } from "@/data/assets/queries";
-  import { bankRangeQuery } from "@/data/bank/queries";
+  import {
+    bankRangeQuery,
+    creditCardBillsRangeQuery,
+  } from "@/data/bank/queries";
   import {
     invoiceTransactionMappingsQuery,
     invoicesRangeQuery,
@@ -45,6 +48,8 @@
     summarizePeriods,
     type SetAsideKind,
   } from "./model/summary";
+  import { summarizeCards } from "./model/cards";
+  import CreditCardSection from "./components/CreditCardSection.svelte";
 
   let { api }: { api: ApiClient } = $props();
 
@@ -78,6 +83,7 @@
     invoiceTransactionMappingsQuery(() => api, range),
   );
   const rates = createQuery(() => exchangeRatesQuery(() => api));
+  const bills = createQuery(() => creditCardBillsRangeQuery(() => api, range));
 
   let selectedPeriod = $state(currentPeriod);
   let sourceFilter = $state("");
@@ -90,7 +96,10 @@
 
   const rateValues = $derived(rateMap(rates.data));
   const dataFailed = $derived(
-    bank.isError || invoices.isError || invoiceMappings.isError,
+    bank.isError ||
+      invoices.isError ||
+      invoiceMappings.isError ||
+      bills.isError,
   );
 
   const items = $derived.by(() => {
@@ -128,6 +137,23 @@
     summaries.get(periodKeys[periodKeys.indexOf(selectedPeriod) - 1] ?? ""),
   );
   const categories = $derived(rankCategories(periods));
+  const accountOfTransaction = $derived(
+    new Map(
+      (bank.data?.transactions ?? []).map((transaction) => [
+        transaction.id,
+        transaction.accountId,
+      ]),
+    ),
+  );
+  const cards = $derived(
+    summarizeCards(
+      bank.data?.accounts ?? [],
+      bills.data ?? [],
+      summary.spending,
+      accountOfTransaction,
+      rateValues,
+    ),
+  );
 
   // Averages skip the running period and periods before any data arrived.
   const closedPeriods = $derived(
@@ -283,6 +309,7 @@
     void bank.refetch();
     void invoices.refetch();
     void invoiceMappings.refetch();
+    void bills.refetch();
   }
 </script>
 
@@ -549,6 +576,12 @@
         </ul>
       {/if}
     </section>
+
+    <CreditCardSection
+      {cards}
+      periodLabel={`${monthLabel(selectedPeriod)}份`}
+      rates={rateValues}
+    />
 
     <section
       id="monthly-detail"

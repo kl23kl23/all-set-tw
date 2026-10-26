@@ -161,6 +161,7 @@ export async function listBankAccounts(db: D1Database) {
       maturityDate: account.maturityDate,
       bankCode: account.bankCode,
       accountLast4: account.accountLast4,
+      creditLimit: account.creditLimit,
       balance: balance.balance,
       availableBalance: balance.availableBalance,
       paymentDueDate: balance.paymentDueDate,

@@ -13,6 +13,8 @@ export interface BankAccountResponse {
   currency: string;
   bankCode?: string | null;
   accountLast4?: string | null;
+  /** 信用卡額度；銀行未提供時為 null。 */
+  creditLimit?: number | null;
   balance?: number | null;
   availableBalance?: number | null;
   paymentDueDate?: string | null;
