@@ -376,7 +376,7 @@
       <h2 class="text-base font-semibold">另列項目</h2>
       <p class="mt-1 text-caption text-subtle">
         股市交割與抽籤、電子支付儲值、信用卡繳款與沒寫用途的轉帳只是把錢移到別處，不算進其他開銷；ATM
-        領現金與轉給家人的錢算開銷
+        領現金、全盈帳戶扣款（都算現金）與轉給家人的錢算開銷
       </p>
       {#if summary.setAside.length === 0}
         <p class="mt-3 text-sm text-subtle">本期沒有另列項目。</p>

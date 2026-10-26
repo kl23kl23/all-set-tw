@@ -1,7 +1,6 @@
 import {
   activityCashFlow,
   activityDateKey,
-  findBatchTopUps,
   periodKeyForDate,
   setAsideKind,
   spendingCategory,
@@ -16,7 +15,6 @@ import {
 export {
   CASH_CATEGORY,
   FAMILY_CATEGORY,
-  findBatchTopUps,
   setAsideKind,
   type SetAsideKind,
 } from "@taiwan-fin-hub/shared";
@@ -48,7 +46,6 @@ export function summarizePeriods(
   keys: string[],
   rates: Record<string, number>,
 ): Map<string, PeriodSummary> {
-  const batchTopUps = findBatchTopUps(items);
   const grouped = new Map<string, ActivityItem[]>(keys.map((key) => [key, []]));
   for (const item of items) {
     grouped.get(periodKeyForDate(activityDateKey(item)))?.push(item);
@@ -59,7 +56,7 @@ export function summarizePeriods(
       const setAside: SetAsideRow[] = [];
       const counted: ActivityItem[] = [];
       for (const item of grouped.get(key)!) {
-        const kind = setAsideKind(item, batchTopUps);
+        const kind = setAsideKind(item);
         const amount = activityAmountTwd(item, rates);
         if (!kind) counted.push(spendingCategory(item));
         // The bank side already lists the payment; the card side would repeat it.

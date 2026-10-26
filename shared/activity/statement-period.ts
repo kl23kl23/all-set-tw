@@ -83,11 +83,10 @@ const BANK_TOP_UP = /line\s?pay\s?money/i;
 const CASH_WITHDRAWAL = /ATM現金|現金提款|提款機/;
 /** A transfer that names someone it is for, such as 給阿嬤, is money spent. */
 const SPENT_TRANSFER = /給/;
-const E_WALLET = /全盈|全支付|街口|悠遊付|icash\s?pay|line\s?pay/i;
-/** Identical wallet charges this many times in a day are a batch of top-ups. */
-const BATCH_TOP_UP_COUNT = 3;
+/** 全盈 payments debited straight from a bank account work like cash. */
+const WALLET_DEBIT = /全盈支付付款|PPPay/i;
 
-export const CASH_CATEGORY = "現金提領";
+export const CASH_CATEGORY = "現金";
 export const FAMILY_CATEGORY = "轉給家人";
 
 export type SetAsideKind =
@@ -97,31 +96,13 @@ function itemText(item: ActivityItem) {
   return `${item.title} ${item.searchText ?? ""}`;
 }
 
-function batchKey(item: ActivityItem) {
-  return `${activityDateKey(item)}|${item.amount}|${item.title}`;
-}
-
-/** Card charges repeated at an e-wallet on one day, the shape of batch top-ups. */
-export function findBatchTopUps(items: ActivityItem[]) {
-  const counts = new Map<string, number>();
-  for (const item of items)
-    if (item.source === "card" && E_WALLET.test(item.title))
-      counts.set(batchKey(item), (counts.get(batchKey(item)) ?? 0) + 1);
-  return new Set(
-    [...counts].filter(([, n]) => n >= BATCH_TOP_UP_COUNT).map(([key]) => key),
-  );
-}
-
 /**
  * Entries that move money elsewhere instead of buying something: stock
  * settlements and IPO lotteries, wallet top-ups, card bill payments and
  * transfers without a stated purpose. The periods list them apart even when
  * the activity page still counts them.
  */
-export function setAsideKind(
-  item: ActivityItem,
-  batchTopUps: ReadonlySet<string> = new Set(),
-): SetAsideKind | null {
+export function setAsideKind(item: ActivityItem): SetAsideKind | null {
   if (!item.amount) return null;
   const text = itemText(item);
   if (item.source === "card") {
@@ -130,7 +111,6 @@ export function setAsideKind(
       CARD_SIDE_PAYMENT.test(text)
     )
       return "card-payment";
-    if (batchTopUps.has(batchKey(item))) return "top-up";
     return null;
   }
   if (item.source !== "bank") return null;
@@ -151,11 +131,12 @@ export function setAsideKind(
   return null;
 }
 
-/** Cash and family transfers count as spending under their own category. */
+/** Cash, bank-debited 全盈 payments and family transfers get their own category. */
 export function spendingCategory(item: ActivityItem): ActivityItem {
   if (item.source !== "bank" || (item.amount ?? 0) >= 0) return item;
   const text = itemText(item);
-  if (CASH_WITHDRAWAL.test(text)) return { ...item, category: CASH_CATEGORY };
+  if (CASH_WITHDRAWAL.test(text) || WALLET_DEBIT.test(text))
+    return { ...item, category: CASH_CATEGORY };
   if (item.categoryId === TRANSFER_CATEGORY && SPENT_TRANSFER.test(text))
     return { ...item, category: FAMILY_CATEGORY };
   return item;
@@ -202,13 +183,12 @@ export function periodSpendingBySource(
   periodKey: string,
   rates: Record<string, number>,
 ): Record<BudgetKind, number> {
-  const batchTopUps = findBatchTopUps(items);
   const totals: Record<BudgetKind, number> = { card: 0, account: 0 };
   for (const item of items) {
     if (item.source !== "card" && item.source !== "bank") continue;
     if (item.excludedFromCalculation) continue;
     if (periodKeyForDate(activityDateKey(item)) !== periodKey) continue;
-    if (setAsideKind(item, batchTopUps)) continue;
+    if (setAsideKind(item)) continue;
     totals[item.source === "card" ? "card" : "account"] +=
       spendingAmountTwd(item, rates) ?? 0;
   }

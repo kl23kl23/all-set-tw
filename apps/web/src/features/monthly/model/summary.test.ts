@@ -161,10 +161,10 @@ describe("bank wording", () => {
       }),
     ),
     item({
-      id: "w9",
-      date: "2026-10-21",
-      amount: -550,
-      title: "全盈支付－全家",
+      id: "pp",
+      source: "bank",
+      amount: -239,
+      title: "電子交易 · 全盈支付付款 PPPay",
       category: "未分類",
       categoryId: "other",
     }),
@@ -212,15 +212,15 @@ describe("bank wording", () => {
     ).toBe(false);
   });
 
-  it("counts cash and family transfers but sets other transfers aside", () => {
+  it("counts cash, bank-debited 全盈 and family transfers but sets other transfers aside", () => {
     expect(kinds.t1).toBe("transfer");
-    expect(october.byCategory.get("現金提領")).toBe(10000);
+    expect(october.byCategory.get("現金")).toBe(10000 + 239);
     expect(october.byCategory.get("轉給家人")).toBe(2500);
   });
 
-  it("treats a run of identical wallet charges as top-ups", () => {
-    expect(october.topUp).toBe(2200);
-    expect(october.byCategory.get("未分類")).toBe(550);
-    expect(october.expense).toBe(10000 + 2500 + 550);
+  it("counts repeated card charges at a wallet as purchases", () => {
+    expect(october.topUp).toBe(0);
+    expect(october.byCategory.get("未分類")).toBe(2200);
+    expect(october.expense).toBe(10000 + 239 + 2500 + 2200);
   });
 });
