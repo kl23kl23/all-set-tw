@@ -7,3 +7,4 @@ export * from "./notifications";
 export * from "./assets";
 export * from "./exchange-rates";
 export * from "./sync";
+export * from "./budgets";

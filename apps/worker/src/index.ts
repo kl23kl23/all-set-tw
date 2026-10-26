@@ -1,6 +1,8 @@
 import { activityRoutes } from "./features/activity/route";
 import { bankCalculationRoutes } from "./features/bank/calculation-route";
 import { bankRoutes } from "./features/bank/route";
+import { budgetRoutes } from "./features/budgets/route";
+import { safelyCheckSpendingBudgets } from "./features/budgets/service";
 import { classificationRoutes } from "./features/classification/route";
 import { connectorRoutes } from "./features/connectors/route";
 import { dashboardRoutes } from "./features/dashboard/route";
@@ -51,6 +53,7 @@ api.route("/", investmentRoutes);
 api.route("/", bankRoutes);
 api.route("/", netWorthRoutes);
 api.route("/", notificationRoutes);
+api.route("/", budgetRoutes);
 api.route("/", connectorRoutes);
 api.route("/", syncScheduleRoutes);
 api.route("/", syncReportRoutes);
@@ -65,7 +68,10 @@ export default {
   async scheduled(_controller, env, ctx) {
     ctx.waitUntil(enqueueScheduledSync(env));
     // Demo deployments never start background work.
-    if (!isDemoMode(env)) ctx.waitUntil(safelyKickAiClassification(env));
+    if (!isDemoMode(env)) {
+      ctx.waitUntil(safelyKickAiClassification(env));
+      ctx.waitUntil(safelyCheckSpendingBudgets(env));
+    }
   },
   async queue(batch: MessageBatch<SyncQueueMessage>, env) {
     await consumeScheduledSyncQueue(batch, env);

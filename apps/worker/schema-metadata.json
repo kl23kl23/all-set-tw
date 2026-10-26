@@ -604,6 +604,24 @@
         "activity_id": "來源種類及活動 ID，作為執行內的去重鍵。",
         "snapshot": "供 API 回傳的日期、名稱、原幣金額、變動種類、發票關係與同步時間 JSON 快照。"
       }
+    },
+    "spending_budgets": {
+      "description": "每月額度設定：信用卡刷卡與銀行帳戶支出各一筆，期別為每月 15 日起算。",
+      "notes": "kind 為 card 或 account；未設定的額度沒有資料列。",
+      "columns": {
+        "kind": "額度種類：card 為信用卡刷卡，account 為銀行帳戶直接支出。",
+        "monthly_limit": "每期額度（新台幣），以 5,000 為單位。",
+        "updated_at": "額度最後更新的時間。"
+      }
+    },
+    "spending_budget_alerts": {
+      "description": "已送出的額度推播紀錄，避免同一期重複通知。",
+      "notes": "alert_key 例如 card:threshold:5000 或 report:day10。",
+      "columns": {
+        "period": "期別鍵 YYYY-MM，代表該月 15 日至次月 14 日。",
+        "alert_key": "推播種類與門檻的識別字串。",
+        "sent_at": "推播送出的時間。"
+      }
     }
   }
 }

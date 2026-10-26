@@ -7,6 +7,7 @@
   import { createPeriodData } from "./model/period-data.svelte";
   import CreditCardSection from "./components/CreditCardSection.svelte";
   import PeriodPicker from "./components/PeriodPicker.svelte";
+  import BudgetControl from "./components/BudgetControl.svelte";
   import SpendingTable, {
     type SpendingFilter,
   } from "./components/SpendingTable.svelte";
@@ -103,7 +104,17 @@
         {currentPeriod}
         selected={selectedPeriod}
         onChange={choosePeriod}
-      />
+      >
+        {#snippet trailing()}
+          <BudgetControl
+            {api}
+            kind="card"
+            label="每月刷卡額度"
+            spent={periodSpend}
+            showUsage={selectedPeriod === currentPeriod}
+          />
+        {/snippet}
+      </PeriodPicker>
     </section>
 
     <section

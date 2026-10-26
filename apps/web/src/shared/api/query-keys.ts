@@ -29,6 +29,7 @@ export const queryKeys = {
     ["sync-reports", batchId, "activities"] as const,
   syncSchedule: ["sync-schedule"] as const,
   notifications: ["notifications"] as const,
+  budgets: ["budgets"] as const,
   classificationCategories: ["classification-categories"] as const,
   classificationRules: ["classification-rules"] as const,
   aiClassification: ["ai-classification"] as const,

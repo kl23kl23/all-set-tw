@@ -259,7 +259,10 @@ export async function safelyLoadPaymentReminders(
   }
 }
 
-async function deliverPushPayload(env: Env, payload: PushNotificationPayload) {
+export async function deliverPushPayload(
+  env: Env,
+  payload: PushNotificationPayload,
+) {
   const { publicKey, privateKey, subject } = requirePushConfiguration(env);
   webpush.setVapidDetails(subject, publicKey, privateKey);
   const subscriptions = await listPushSubscriptions(env.DB);

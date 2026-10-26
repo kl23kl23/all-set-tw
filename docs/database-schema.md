@@ -8,10 +8,10 @@
 
 ## 目錄
 
-- Tables：35
+- Tables：37
 - Explicit indexes：47
 - Other objects：0
-- Migrations：63
+- Migrations：64
 
 ## Tables
 
@@ -44,6 +44,8 @@
 | [`push_subscriptions`](#push_subscriptions) | 瀏覽器 Web Push 裝置訂閱資料。 | 6 | 0 | 0 |
 | [`scheduled_sync_batch_results`](#scheduled_sync_batch_results) | 預設排程同步批次中各工作的完成結果。 | 9 | 1 | 0 |
 | [`scheduled_sync_batches`](#scheduled_sync_batches) | 各排程同步批次的狀態與同步前後資產、信用卡及貸款負債快照。 | 14 | 0 | 2 |
+| [`spending_budget_alerts`](#spending_budget_alerts) | 已送出的額度推播紀錄，避免同一期重複通知。 | 3 | 0 | 0 |
+| [`spending_budgets`](#spending_budgets) | 每月額度設定：信用卡刷卡與銀行帳戶支出各一筆，期別為每月 15 日起算。 | 3 | 0 | 0 |
 | [`sync_activity_changes`](#sync_activity_changes) | 與金融資料 promotion 同一 transaction 保存的新增紀錄與入帳事件。 | 5 | 1 | 0 |
 | [`sync_activity_details`](#sync_activity_details) | 報告完成時沿用活動配對規則產生的活動展示快照。 | 3 | 1 | 0 |
 | [`sync_activity_runs`](#sync_activity_runs) | 同步執行與排程報告的明確關聯，涵蓋原始同步及成功的手動補救。 | 7 | 1 | 1 |
@@ -1425,6 +1427,70 @@ CREATE TABLE "scheduled_sync_batches" (
 , completed_at TEXT, is_baseline INTEGER NOT NULL DEFAULT 0, assets_before_twd INTEGER, credit_card_debt_before_twd INTEGER, missing_currencies_before TEXT NOT NULL DEFAULT '[]', assets_after_twd INTEGER, credit_card_debt_after_twd INTEGER, missing_currencies_after TEXT NOT NULL DEFAULT '[]', loan_debt_before_twd INTEGER, loan_debt_after_twd INTEGER)
 ```
 
+### `spending_budget_alerts`
+
+> 用途：已送出的額度推播紀錄，避免同一期重複通知。
+> 注意：alert_key 例如 card:threshold:5000 或 report:day10。
+
+#### Columns
+
+| 順序 | 欄位 | 意義 | SQLite type | 可為 NULL | 預設值 | PK 順序 | Generated |
+| ---: | --- | --- | --- | :---: | --- | ---: | --- |
+| 1 | `period` | 期別鍵 YYYY-MM，代表該月 15 日至次月 14 日。 | TEXT | NO | — | 1 | — |
+| 2 | `alert_key` | 推播種類與門檻的識別字串。 | TEXT | NO | — | 2 | — |
+| 3 | `sent_at` | 推播送出的時間。 | TEXT | NO | — | — | — |
+
+#### Foreign keys
+
+—
+
+#### Indexes
+
+—
+
+#### DDL
+
+```sql
+CREATE TABLE spending_budget_alerts (
+  period TEXT NOT NULL,
+  alert_key TEXT NOT NULL,
+  sent_at TEXT NOT NULL,
+  PRIMARY KEY (period, alert_key)
+)
+```
+
+### `spending_budgets`
+
+> 用途：每月額度設定：信用卡刷卡與銀行帳戶支出各一筆，期別為每月 15 日起算。
+> 注意：kind 為 card 或 account；未設定的額度沒有資料列。
+
+#### Columns
+
+| 順序 | 欄位 | 意義 | SQLite type | 可為 NULL | 預設值 | PK 順序 | Generated |
+| ---: | --- | --- | --- | :---: | --- | ---: | --- |
+| 1 | `kind` | 額度種類：card 為信用卡刷卡，account 為銀行帳戶直接支出。 | TEXT | NO | — | 1 | — |
+| 2 | `monthly_limit` | 每期額度（新台幣），以 5,000 為單位。 | INTEGER | NO | — | — | — |
+| 3 | `updated_at` | 額度最後更新的時間。 | TEXT | NO | — | — | — |
+
+#### Foreign keys
+
+—
+
+#### Indexes
+
+—
+
+#### DDL
+
+```sql
+CREATE TABLE spending_budgets (
+  kind TEXT NOT NULL CHECK (kind IN ('card', 'account')),
+  monthly_limit INTEGER NOT NULL CHECK (monthly_limit > 0),
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (kind)
+)
+```
+
 ### `sync_activity_changes`
 
 > 用途：與金融資料 promotion 同一 transaction 保存的新增紀錄與入帳事件。
@@ -1915,6 +1981,7 @@ Migration 是 schema 演進的 source of truth；若要了解某欄位的變更�
 - [`0063_payment_due_notification.sql`](../apps/worker/migrations/0063_payment_due_notification.sql)
 - [`0064_payment_accounts.sql`](../apps/worker/migrations/0064_payment_accounts.sql)
 - [`0065_ubot_sync_job.sql`](../apps/worker/migrations/0065_ubot_sync_job.sql)
+- [`0066_spending_budgets.sql`](../apps/worker/migrations/0066_spending_budgets.sql)
 
 ## 程式碼導覽
 

@@ -6,6 +6,7 @@ export * from "./api/classification";
 export * from "./api/connectors";
 export * from "./api/dashboard";
 export * from "./api/notifications";
+export * from "./api/budgets";
 export * from "./api/sync";
 export * from "./api/sync-reports";
 export * from "./activity/types";
@@ -13,6 +14,7 @@ export * from "./activity/list";
 export * from "./activity/flow";
 export * from "./activity/filter";
 export * from "./activity/items";
+export * from "./activity/statement-period";
 export * from "./payment-reminders";
 export {
   deduplicateBankTransactions,

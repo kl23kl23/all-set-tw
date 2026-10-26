@@ -3,7 +3,10 @@
   import Button from "@/shared/ui/Button.svelte";
   import EmptyState from "@/shared/ui/EmptyState.svelte";
   import type { ApiClient } from "@/shared/api/client";
-  import { ACTIVITY_CATEGORY_COLORS } from "@/features/activity/model/chart";
+  import {
+    ACTIVITY_CATEGORY_COLORS,
+    activityFlowAmountTwd,
+  } from "@/features/activity/model/chart";
   import {
     formatCompactTwd,
     formatCurrency,
@@ -12,6 +15,7 @@
   import { rankCategories, type SetAsideKind } from "./model/summary";
   import { createPeriodData } from "./model/period-data.svelte";
   import PeriodPicker from "./components/PeriodPicker.svelte";
+  import BudgetControl from "./components/BudgetControl.svelte";
   import SpendingTable, {
     type SpendingFilter,
   } from "./components/SpendingTable.svelte";
@@ -55,6 +59,15 @@
     summaries.get(periodKeys[periodKeys.indexOf(selectedPeriod) - 1] ?? ""),
   );
   const categories = $derived(rankCategories(periods));
+  /** Money spent straight from bank accounts, which the account budget watches. */
+  const accountSpent = $derived(
+    summary.spending
+      .filter((item) => item.source === "bank")
+      .reduce(
+        (sum, item) => sum + activityFlowAmountTwd(item, "expense", data.rates),
+        0,
+      ),
+  );
 
   // Averages skip the running period and periods before any data arrived.
   const closedPeriods = $derived(
@@ -176,7 +189,17 @@
         {currentPeriod}
         selected={selectedPeriod}
         onChange={choosePeriod}
-      />
+      >
+        {#snippet trailing()}
+          <BudgetControl
+            {api}
+            kind="account"
+            label="每月帳戶支出額度"
+            spent={accountSpent}
+            showUsage={selectedPeriod === currentPeriod}
+          />
+        {/snippet}
+      </PeriodPicker>
       <p class="mt-4 text-base leading-7 text-ink">{takeaway}</p>
     </section>
 
