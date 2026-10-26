@@ -1,6 +1,7 @@
 import {
   BarChart3,
   CalendarRange,
+  CreditCard,
   History,
   Settings,
   Wallet,
@@ -41,6 +42,13 @@ export const navItems: NavigationItem[] = [
     icon: CalendarRange,
   },
   {
+    view: "cards",
+    label: "信用卡",
+    shortLabel: "信用卡",
+    description: "各卡額度使用、帳單與每月 15 日結算的刷卡明細。",
+    icon: CreditCard,
+  },
+  {
     view: "activity",
     label: "活動",
     shortLabel: "活動",
@@ -60,6 +68,7 @@ export const mobilePrimaryViews: PrimaryView[] = [
   "overview",
   "assets",
   "monthly",
+  "cards",
   "activity",
 ];
 

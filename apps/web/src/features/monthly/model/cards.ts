@@ -14,6 +14,13 @@ export interface CardSummary {
   latestBill: CreditCardBillRow | null;
 }
 
+export function cardDisplayName({ account }: Pick<CardSummary, "account">) {
+  const last4 = account.accountLast4 && `末四碼 ${account.accountLast4}`;
+  return [account.institutionName, account.accountName ?? last4]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 /**
  * Per-card view for one period. Card balances are stored as the negative
  * amount owed; the available credit, when the bank reports it, is the more

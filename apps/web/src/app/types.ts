@@ -1,5 +1,5 @@
 export type PrimaryView =
-  "overview" | "assets" | "monthly" | "activity" | "settings";
+  "overview" | "assets" | "monthly" | "cards" | "activity" | "settings";
 
 export type DetailView = "investments" | "manual-assets";
 

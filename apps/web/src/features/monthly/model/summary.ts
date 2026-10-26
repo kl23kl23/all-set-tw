@@ -13,6 +13,8 @@ import { periodKeyForDate } from "./period";
 const TOP_UP_RULE = "system:bank:e-wallet-transfer";
 const CARD_PAYMENT_RULE = "system:bank:creditcard-payment";
 const INVESTMENT_CATEGORY = "investment";
+/** IPO lottery debits, fees and refunds; banks rarely tag them as investments. */
+const STOCK_LOTTERY = /抽籤|申購|中籤/;
 
 export type SetAsideKind = "investment" | "top-up" | "card-payment";
 
@@ -39,12 +41,16 @@ export interface PeriodSummary {
 
 /**
  * Bank entries that move money elsewhere instead of buying something: stock
- * settlements, wallet top-ups and card bill payments. The period lists them
+ * settlements and IPO lotteries, wallet top-ups and card bill payments. The period lists them
  * apart even when the activity page still counts them.
  */
 export function setAsideKind(item: ActivityItem): SetAsideKind | null {
   if (item.source !== "bank" || !item.amount) return null;
-  if (item.categoryId === INVESTMENT_CATEGORY) return "investment";
+  if (
+    item.categoryId === INVESTMENT_CATEGORY ||
+    STOCK_LOTTERY.test(`${item.title} ${item.searchText ?? ""}`)
+  )
+    return "investment";
   if (item.amount > 0) return null;
   if (item.classificationRuleId === TOP_UP_RULE) return "top-up";
   if (item.classificationRuleId === CARD_PAYMENT_RULE) return "card-payment";

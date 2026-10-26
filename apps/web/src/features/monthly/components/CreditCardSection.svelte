@@ -2,31 +2,15 @@
   import { activityDateKey } from "@taiwan-fin-hub/shared";
   import { activityFlowAmountTwd } from "@/features/activity/model/chart";
   import { formatCurrency } from "@/shared/format/financial";
-  import type { CardSummary } from "../model/cards";
+  import { cardDisplayName, type CardSummary } from "../model/cards";
 
   let {
     cards,
-    periodLabel,
     rates,
   }: {
     cards: CardSummary[];
-    periodLabel: string;
     rates: Record<string, number>;
   } = $props();
-
-  const periodTotal = $derived(
-    cards.reduce((sum, card) => sum + card.periodSpend, 0),
-  );
-
-  function cardName(card: CardSummary) {
-    const { institutionName, accountName, accountLast4 } = card.account;
-    return [
-      institutionName,
-      accountName ?? (accountLast4 && `末四碼 ${accountLast4}`),
-    ]
-      .filter(Boolean)
-      .join(" · ");
-  }
 
   function usageTone(usage: number) {
     if (usage >= 0.8) return "bg-coral";
@@ -49,12 +33,7 @@
 </script>
 
 <section class="min-w-0 border-t border-ink/10 pt-5" aria-label="信用卡">
-  <div class="flex items-baseline justify-between gap-3">
-    <h2 class="text-base font-semibold">信用卡</h2>
-    <span class="text-caption text-subtle"
-      >{periodLabel}刷卡合計 {formatCurrency(periodTotal)}</span
-    >
-  </div>
+  <h2 class="text-base font-semibold">各卡額度與帳單</h2>
   <p class="mt-1 text-caption text-subtle">
     額度使用以銀行最近一次同步為準；點卡片展開本期刷卡明細
   </p>
@@ -66,7 +45,9 @@
         <details class="group rounded-xl border border-ink/10 p-4">
           <summary class="cursor-pointer list-none">
             <div class="flex items-start justify-between gap-3">
-              <p class="min-w-0 truncate font-semibold">{cardName(card)}</p>
+              <p class="min-w-0 truncate font-semibold">
+                {cardDisplayName(card)}
+              </p>
               <p class="shrink-0 text-right">
                 <span class="block text-caption text-subtle">本期刷卡</span>
                 <span class="font-semibold tabular-nums text-coral"

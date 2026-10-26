@@ -1,59 +1,23 @@
 <script lang="ts">
-  import {
-    activityDateKey,
-    buildActivityItems,
-    type ActivityItem,
-  } from "@taiwan-fin-hub/shared";
-  import { createQuery } from "@tanstack/svelte-query";
-  import { ChevronLeft, ChevronRight, Search } from "@lucide/svelte";
-  import Badge from "@/shared/ui/Badge.svelte";
+  import { activityDateKey, type ActivityItem } from "@taiwan-fin-hub/shared";
   import Button from "@/shared/ui/Button.svelte";
   import EmptyState from "@/shared/ui/EmptyState.svelte";
-  import Input from "@/shared/ui/Input.svelte";
-  import Select from "@/shared/ui/Select.svelte";
   import type { ApiClient } from "@/shared/api/client";
-  import { exchangeRatesQuery } from "@/data/assets/queries";
-  import {
-    bankRangeQuery,
-    creditCardBillsRangeQuery,
-  } from "@/data/bank/queries";
-  import {
-    invoiceTransactionMappingsQuery,
-    invoicesRangeQuery,
-  } from "@/data/invoices/queries";
-  import {
-    deduplicateBankTransactions,
-    matchInvoicesToTransactions,
-  } from "@/data/activity/matching";
-  import {
-    ACTIVITY_CATEGORY_COLORS,
-    activityFlowAmountTwd,
-  } from "@/features/activity/model/chart";
+  import { ACTIVITY_CATEGORY_COLORS } from "@/features/activity/model/chart";
   import {
     formatCompactTwd,
     formatCurrency,
     formatNumber,
-    rateMap,
   } from "@/shared/format/financial";
-  import {
-    formatPeriodLabel,
-    formatPeriodRange,
-    periodKeyForDate,
-    periodsMonthRange,
-    recentPeriodKeys,
-    statementPeriod,
-  } from "./model/period";
-  import {
-    rankCategories,
-    summarizePeriods,
-    type SetAsideKind,
-  } from "./model/summary";
-  import { summarizeCards } from "./model/cards";
-  import CreditCardSection from "./components/CreditCardSection.svelte";
+  import { rankCategories, type SetAsideKind } from "./model/summary";
+  import { createPeriodData } from "./model/period-data.svelte";
+  import PeriodPicker from "./components/PeriodPicker.svelte";
+  import SpendingTable, {
+    type SpendingFilter,
+  } from "./components/SpendingTable.svelte";
 
   let { api }: { api: ApiClient } = $props();
 
-  const PERIOD_COUNT = 6;
   /** Stacked bars show this many categories; the rest share one segment. */
   const CHART_CATEGORIES = 6;
   const OTHER = "其他類別";
@@ -63,97 +27,33 @@
     invoice: "發票",
   };
   const SET_ASIDE_LABELS: Record<SetAsideKind, string> = {
-    investment: "股市交割",
+    investment: "股市",
     "top-up": "電子支付儲值",
     "card-payment": "繳信用卡費",
   };
+  const DETAIL_FILTERS: SpendingFilter[] = [
+    {
+      id: "source",
+      allLabel: "全部來源",
+      value: (item) => item.source,
+      optionLabel: (value) => SOURCE_LABELS[value] ?? value,
+    },
+    { id: "category", allLabel: "全部類別", value: (item) => item.category },
+  ];
 
-  const today = activityDateKey({
-    date: new Date().toISOString(),
-    dateHasTime: true,
-    source: "bank",
-  });
-  const currentPeriod = periodKeyForDate(today);
-  const periodKeys = recentPeriodKeys(currentPeriod, PERIOD_COUNT);
-  const range = periodsMonthRange(periodKeys);
-
-  const bank = createQuery(() => bankRangeQuery(() => api, range));
-  const invoices = createQuery(() => invoicesRangeQuery(() => api, range));
-  const invoiceMappings = createQuery(() =>
-    invoiceTransactionMappingsQuery(() => api, range),
-  );
-  const rates = createQuery(() => exchangeRatesQuery(() => api));
-  const bills = createQuery(() => creditCardBillsRangeQuery(() => api, range));
+  const data = createPeriodData(() => api);
+  const { currentPeriod, periodKeys } = data;
 
   let selectedPeriod = $state(currentPeriod);
-  let sourceFilter = $state("");
-  let categoryFilter = $state("");
-  let searchText = $state("");
-  let sort = $state<{
-    key: "date" | "title" | "category" | "amount";
-    dir: 1 | -1;
-  }>({ key: "date", dir: -1 });
+  let detailFilters = $state<Record<string, string>>({});
 
-  const rateValues = $derived(rateMap(rates.data));
-  const dataFailed = $derived(
-    bank.isError ||
-      invoices.isError ||
-      invoiceMappings.isError ||
-      bills.isError,
-  );
-
-  const items = $derived.by(() => {
-    const accounts = new Map(
-      (bank.data?.accounts ?? []).map((account) => [account.id, account]),
-    );
-    const transactions = deduplicateBankTransactions(
-      (bank.data?.transactions ?? []).map((transaction) => ({
-        ...transaction,
-        accountType:
-          transaction.accountType ??
-          accounts.get(transaction.accountId)?.accountType,
-      })),
-    );
-    const matches = matchInvoicesToTransactions(
-      transactions,
-      invoices.data ?? [],
-      invoiceMappings.data ?? [],
-    );
-    // Investment trades are not spending, so the period summary skips them.
-    return buildActivityItems(
-      transactions,
-      invoices.data ?? [],
-      [],
-      accounts,
-      matches,
-    );
-  });
-
-  const summaries = $derived(summarizePeriods(items, periodKeys, rateValues));
+  const summaries = $derived(data.summaries);
   const periods = $derived(periodKeys.map((key) => summaries.get(key)!));
   const summary = $derived(summaries.get(selectedPeriod)!);
-  const period = $derived(statementPeriod(selectedPeriod));
   const previous = $derived(
     summaries.get(periodKeys[periodKeys.indexOf(selectedPeriod) - 1] ?? ""),
   );
   const categories = $derived(rankCategories(periods));
-  const accountOfTransaction = $derived(
-    new Map(
-      (bank.data?.transactions ?? []).map((transaction) => [
-        transaction.id,
-        transaction.accountId,
-      ]),
-    ),
-  );
-  const cards = $derived(
-    summarizeCards(
-      bank.data?.accounts ?? [],
-      bills.data ?? [],
-      summary.spending,
-      accountOfTransaction,
-      rateValues,
-    ),
-  );
 
   // Averages skip the running period and periods before any data arrived.
   const closedPeriods = $derived(
@@ -218,45 +118,6 @@
     ),
   );
 
-  const detailRows = $derived.by(() => {
-    const query = searchText.trim().toLowerCase();
-    const rows = summary.spending
-      .filter(
-        (item) =>
-          (!sourceFilter || item.source === sourceFilter) &&
-          (!categoryFilter || item.category === categoryFilter) &&
-          (!query ||
-            `${item.title} ${item.subtitle}`.toLowerCase().includes(query)),
-      )
-      .map((item) => ({
-        item,
-        date: activityDateKey(item),
-        amount: activityFlowAmountTwd(item, "expense", rateValues),
-      }));
-    const value = (row: (typeof rows)[number]) =>
-      sort.key === "date"
-        ? row.date
-        : sort.key === "amount"
-          ? row.amount
-          : sort.key === "title"
-            ? row.item.title
-            : row.item.category;
-    return rows.sort((a, b) => {
-      const left = value(a);
-      const right = value(b);
-      return (left < right ? -1 : left > right ? 1 : 0) * sort.dir;
-    });
-  });
-  const detailTotal = $derived(
-    detailRows.reduce((sum, row) => sum + row.amount, 0),
-  );
-  const periodCategories = $derived(
-    [...summary.byCategory.keys()].sort((a, b) => a.localeCompare(b, "zh-TW")),
-  );
-  const periodSources = $derived([
-    ...new Set(summary.spending.map((item) => item.source)),
-  ]);
-
   function monthLabel(key: string) {
     return `${Number(key.slice(5))} 月`;
   }
@@ -274,108 +135,47 @@
 
   function choosePeriod(key: string) {
     selectedPeriod = key;
-    categoryFilter = "";
-  }
-
-  function shiftPeriod(offset: number) {
-    const next = periodKeys[periodKeys.indexOf(selectedPeriod) + offset];
-    if (next) choosePeriod(next);
+    detailFilters = {};
   }
 
   function chooseCategory(category: string) {
-    categoryFilter = categoryFilter === category ? "" : category;
+    detailFilters = {
+      ...detailFilters,
+      category: detailFilters.category === category ? "" : category,
+    };
     document
       .getElementById("monthly-detail")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function sortBy(key: typeof sort.key) {
-    sort =
-      sort.key === key
-        ? { key, dir: sort.dir === 1 ? -1 : 1 }
-        : { key, dir: key === "date" || key === "amount" ? -1 : 1 };
-  }
-
-  function sortState(key: typeof sort.key) {
-    if (sort.key !== key) return "none";
-    return sort.dir === 1 ? "ascending" : "descending";
-  }
-
   function itemKey(item: ActivityItem) {
     return `${item.source}:${item.id}`;
   }
-
-  function retry() {
-    void bank.refetch();
-    void invoices.refetch();
-    void invoiceMappings.refetch();
-    void bills.refetch();
-  }
 </script>
 
-{#snippet sortHeader(key: typeof sort.key, label: string, alignEnd = false)}
-  <th
-    aria-sort={sortState(key)}
-    class={`sticky top-0 bg-paper px-2 py-2 font-medium text-subtle ${alignEnd ? "text-right" : "text-left"}`}
-  >
-    <button class="whitespace-nowrap" onclick={() => sortBy(key)}
-      >{label}{sort.key === key ? (sort.dir === 1 ? " ↑" : " ↓") : ""}</button
-    >
-  </th>
-{/snippet}
-
-{#if bank.isPending || invoices.isPending || invoiceMappings.isPending}
+{#if data.pending}
   <EmptyState title="載入月份收支中" body="正在整理銀行、信用卡與發票資料。" />
 {:else}
   <div class="grid min-w-0 max-w-full gap-6 overflow-x-clip pt-3 md:pt-2">
-    {#if dataFailed}
+    {#if data.failed}
       <div
         class="flex flex-col gap-3 rounded-xl border border-coral/25 bg-coral/5 px-4 py-3 text-sm text-ink sm:flex-row sm:items-center sm:justify-between"
         role="alert"
       >
         <p class="font-semibold text-coral">部分資料載入失敗，金額可能不完整</p>
-        <Button class="h-11 shrink-0" variant="outline" onclick={retry}
+        <Button class="h-11 shrink-0" variant="outline" onclick={data.retry}
           >重試</Button
         >
       </div>
     {/if}
 
     <section class="min-w-0" aria-label="結算期間">
-      <div class="flex min-w-0 items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="上一期"
-          disabled={selectedPeriod === periodKeys[0]}
-          onclick={() => shiftPeriod(-1)}><ChevronLeft class="size-5" /></Button
-        >
-        <Select
-          aria-label="選擇結算月份"
-          class="h-11 min-w-0 flex-1 font-semibold sm:w-auto sm:flex-none"
-          value={selectedPeriod}
-          onchange={(event: Event) =>
-            choosePeriod((event.currentTarget as HTMLSelectElement).value)}
-          >{#each [...periodKeys].reverse() as key (key)}<option value={key}
-              >{formatPeriodLabel(key)}（{formatPeriodRange(
-                statementPeriod(key),
-              )}）</option
-            >{/each}</Select
-        >
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="下一期"
-          disabled={selectedPeriod === currentPeriod}
-          onclick={() => shiftPeriod(1)}><ChevronRight class="size-5" /></Button
-        >
-      </div>
-      <p class="mt-2 flex items-center gap-2 text-caption text-subtle">
-        每月 15 日結算 · {period.start.replaceAll(
-          "-",
-          "/",
-        )}～{period.end.replaceAll("-", "/")}
-        {#if selectedPeriod === currentPeriod}<Badge>進行中</Badge>{/if}
-      </p>
+      <PeriodPicker
+        {periodKeys}
+        {currentPeriod}
+        selected={selectedPeriod}
+        onChange={choosePeriod}
+      />
       <p class="mt-4 text-base leading-7 text-ink">{takeaway}</p>
     </section>
 
@@ -413,7 +213,7 @@
         </p>
       </div>
       <div class="rounded-xl border border-ink/10 p-4">
-        <p class="text-caption text-subtle">股市交割扣款</p>
+        <p class="text-caption text-subtle">股市交割與抽籤</p>
         <p class="mt-1 text-xl font-semibold tracking-tight tabular-nums">
           {formatCurrency(summary.investmentOut)}
         </p>
@@ -516,7 +316,7 @@
                 <tr class="border-b border-ink/5">
                   <td class="sticky left-0 bg-paper px-2 py-2">
                     <button
-                      class={`whitespace-nowrap text-left font-medium ${categoryFilter === row.category ? "text-steel underline" : ""}`}
+                      class={`whitespace-nowrap text-left font-medium ${detailFilters.category === row.category ? "text-steel underline" : ""}`}
                       onclick={() => chooseCategory(row.category)}
                       >{row.category}</button
                     >
@@ -549,7 +349,7 @@
     <section class="min-w-0 border-t border-ink/10 pt-5">
       <h2 class="text-base font-semibold">另列項目</h2>
       <p class="mt-1 text-caption text-subtle">
-        股市交割、電子支付儲值與信用卡繳款只是把錢移到別處，不算進其他開銷
+        股市交割與抽籤、電子支付儲值與信用卡繳款只是把錢移到別處，不算進其他開銷
       </p>
       {#if summary.setAside.length === 0}
         <p class="mt-3 text-sm text-subtle">本期沒有另列項目。</p>
@@ -577,12 +377,6 @@
       {/if}
     </section>
 
-    <CreditCardSection
-      {cards}
-      periodLabel={`${monthLabel(selectedPeriod)}份`}
-      rates={rateValues}
-    />
-
     <section
       id="monthly-detail"
       class="min-w-0 scroll-mt-24 border-t border-ink/10 pt-5"
@@ -592,85 +386,16 @@
       <p class="mt-1 text-caption text-subtle">
         {monthLabel(selectedPeriod)}份其他開銷，點欄位標題可排序
       </p>
-      <div class="mt-3 grid gap-2 sm:grid-cols-[auto_auto_1fr]">
-        <Select
-          aria-label="篩選來源"
-          class="h-10 sm:w-auto"
-          bind:value={sourceFilter}
-          ><option value="">全部來源</option
-          >{#each periodSources as source (source)}<option value={source}
-              >{SOURCE_LABELS[source] ?? source}</option
-            >{/each}</Select
-        >
-        <Select
-          aria-label="篩選類別"
-          class="h-10 sm:w-auto"
-          bind:value={categoryFilter}
-          ><option value="">全部類別</option
-          >{#each periodCategories as category (category)}<option
-              value={category}>{category}</option
-            >{/each}</Select
-        >
-        <div class="relative min-w-0">
-          <Search
-            class="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-subtle"
-          />
-          <Input
-            type="search"
-            aria-label="搜尋商店"
-            placeholder="搜尋商店…"
-            class="h-10 pl-9"
-            bind:value={searchText}
-            maxlength={100}
-          />
-        </div>
-      </div>
-      <p class="mt-3 text-caption text-subtle" role="status">
-        {detailRows.length} 筆，合計 {formatCurrency(detailTotal)}
-      </p>
-      <div class="mt-2 max-h-[36rem] overflow-auto">
-        <table class="w-full border-collapse text-sm tabular-nums">
-          <thead>
-            <tr class="border-b border-ink/10 text-caption">
-              {@render sortHeader("date", "日期")}
-              {@render sortHeader("title", "商店")}
-              {@render sortHeader("category", "類別")}
-              {@render sortHeader("amount", "金額", true)}
-            </tr>
-          </thead>
-          <tbody>
-            {#each detailRows as row (itemKey(row.item))}
-              <tr class="border-b border-ink/5 align-top">
-                <td class="whitespace-nowrap px-2 py-2.5 text-subtle"
-                  >{shortDate(row.date)}</td
-                >
-                <td class="min-w-0 px-2 py-2.5">
-                  <p class="font-medium">{row.item.title}</p>
-                  <p class="text-caption text-subtle">
-                    {SOURCE_LABELS[row.item.source] ?? row.item.source}{row.item
-                      .institutionName
-                      ? ` · ${row.item.institutionName}`
-                      : ""}
-                  </p>
-                </td>
-                <td class="whitespace-nowrap px-2 py-2.5"
-                  >{row.item.category}</td
-                >
-                <td
-                  class="whitespace-nowrap px-2 py-2.5 text-right font-semibold"
-                  >{formatCurrency(row.amount)}</td
-                >
-              </tr>
-            {:else}
-              <tr
-                ><td class="px-2 py-4 text-subtle" colspan="4"
-                  >沒有符合條件的紀錄。</td
-                ></tr
-              >
-            {/each}
-          </tbody>
-        </table>
-      </div>
+      <SpendingTable
+        items={summary.spending}
+        rates={data.rates}
+        filters={DETAIL_FILTERS}
+        bind:selected={detailFilters}
+        describe={(item) =>
+          [SOURCE_LABELS[item.source] ?? item.source, item.institutionName]
+            .filter(Boolean)
+            .join(" · ")}
+      />
     </section>
   </div>
 {/if}

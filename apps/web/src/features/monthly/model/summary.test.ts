@@ -40,6 +40,15 @@ describe("period summary", () => {
       categoryId: "investment",
     }),
     item({
+      id: "i",
+      source: "bank",
+      date: "2026-10-26",
+      amount: -20,
+      title: "抽籤扣款 處理費",
+      category: "手續費",
+      categoryId: "fee",
+    }),
+    item({
       id: "h",
       source: "bank",
       date: "2026-10-24",
@@ -67,7 +76,7 @@ describe("period summary", () => {
 
   it("lists settlements, wallet top-ups and card payments apart from spending", () => {
     const october = summaries.get("2026-10")!;
-    expect(october.investmentOut).toBe(120000);
+    expect(october.investmentOut).toBe(120020);
     expect(october.investmentIn).toBe(30000);
     expect(october.topUp).toBe(3000);
     expect(october.cardPayment).toBe(8000);
