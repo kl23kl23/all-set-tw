@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ActivityItem } from "@taiwan-fin-hub/shared";
-import { rankCategories, setAsideKind, summarizePeriods } from "./summary";
+import {
+  cashInvoiceSellers,
+  rankCategories,
+  setAsideKind,
+  summarizePeriods,
+} from "./summary";
 
 function item(overrides: Partial<ActivityItem>): ActivityItem {
   return {
@@ -222,5 +227,50 @@ describe("bank wording", () => {
     expect(october.topUp).toBe(0);
     expect(october.byCategory.get("未分類")).toBe(2200);
     expect(october.expense).toBe(10000 + 239 + 2500 + 2200);
+  });
+});
+
+describe("cash invoices", () => {
+  const rows = [
+    item({
+      id: "atm",
+      source: "bank",
+      amount: -10000,
+      title: "ATM現金 · 台新",
+      categoryId: "transfer",
+      category: "轉帳",
+    }),
+    item({
+      id: "i1",
+      source: "invoice",
+      amount: 55,
+      title: "全家便利商店股份有限公司",
+    }),
+    item({
+      id: "i2",
+      source: "invoice",
+      amount: 40,
+      title: "全家便利商店股份有限公司",
+    }),
+    item({
+      id: "i3",
+      source: "invoice",
+      amount: 1109,
+      title: "禾富加油站股份有限公司",
+    }),
+  ];
+  const october = summarizePeriods(rows, ["2026-10"], {}).get("2026-10")!;
+
+  it("explains cash with unmatched invoices instead of counting them again", () => {
+    expect(october.expense).toBe(10000);
+    expect(october.spending.map((row) => row.id)).toEqual(["atm"]);
+    expect(october.cashInvoiceTotal).toBe(1204);
+  });
+
+  it("groups cash invoices by seller", () => {
+    expect(cashInvoiceSellers(october.cashInvoices, {})).toEqual([
+      { seller: "禾富加油站股份有限公司", count: 1, amount: 1109 },
+      { seller: "全家便利商店股份有限公司", count: 2, amount: 95 },
+    ]);
   });
 });

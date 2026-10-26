@@ -12,7 +12,12 @@
     formatCurrency,
     formatNumber,
   } from "@/shared/format/financial";
-  import { rankCategories, type SetAsideKind } from "./model/summary";
+  import {
+    CASH_CATEGORY,
+    cashInvoiceSellers,
+    rankCategories,
+    type SetAsideKind,
+  } from "./model/summary";
   import { createPeriodData } from "./model/period-data.svelte";
   import PeriodPicker from "./components/PeriodPicker.svelte";
   import BudgetControl from "./components/BudgetControl.svelte";
@@ -25,6 +30,7 @@
   /** Stacked bars show this many categories; the rest share one segment. */
   const CHART_CATEGORIES = 6;
   const OTHER = "其他類別";
+  const CASH_SELLERS_SHOWN = 8;
   const SOURCE_LABELS: Record<string, string> = {
     bank: "銀行",
     card: "信用卡",
@@ -59,6 +65,10 @@
     summaries.get(periodKeys[periodKeys.indexOf(selectedPeriod) - 1] ?? ""),
   );
   const categories = $derived(rankCategories(periods));
+  const cashSpent = $derived(summary.byCategory.get(CASH_CATEGORY) ?? 0);
+  const cashSellers = $derived(
+    cashInvoiceSellers(summary.cashInvoices, data.rates),
+  );
   /** Money spent straight from bank accounts, which the account budget watches. */
   const accountSpent = $derived(
     summary.spending
@@ -401,6 +411,77 @@
             </li>
           {/each}
         </ul>
+      {/if}
+    </section>
+
+    <section
+      class="min-w-0 border-t border-ink/10 pt-5"
+      aria-label="現金花在哪裡"
+    >
+      <div class="flex items-baseline justify-between gap-3">
+        <h2 class="text-base font-semibold">現金花在哪裡</h2>
+        <span class="text-caption tabular-nums text-subtle"
+          >本期現金 {formatCurrency(cashSpent)}</span
+        >
+      </div>
+      <p class="mt-1 text-caption text-subtle">
+        沒配對到刷卡的發票視為現金購買，用來說明現金去向，不另外算開銷。其實是刷卡的，到「活動」頁手動配對就會移出這裡
+      </p>
+      {#if cashSellers.length === 0}
+        <p class="mt-3 text-sm text-subtle">本期沒有未配對的發票。</p>
+      {:else}
+        <p class="mt-3 text-sm tabular-nums">
+          有發票的 {formatCurrency(summary.cashInvoiceTotal)}（{summary
+            .cashInvoices.length} 張）{cashSpent <= 0
+            ? ""
+            : summary.cashInvoiceTotal <= cashSpent
+              ? `，約佔現金 ${Math.round((summary.cashInvoiceTotal / cashSpent) * 100)}%`
+              : ""}
+        </p>
+        {#if summary.cashInvoiceTotal > cashSpent}
+          <p class="mt-1 text-caption text-coral">
+            比本期現金多 {formatCurrency(
+              summary.cashInvoiceTotal - cashSpent,
+            )}，可能有刷卡或上期領的現金，可到「活動」頁把刷卡的發票配對起來
+          </p>
+        {/if}
+        <ul class="mt-2 divide-y divide-ink/5">
+          {#each cashSellers.slice(0, CASH_SELLERS_SHOWN) as seller (seller.seller)}
+            <li class="flex items-baseline justify-between gap-3 py-2">
+              <span class="min-w-0 truncate text-sm"
+                >{seller.seller}
+                <span class="text-caption text-subtle">{seller.count} 張</span
+                ></span
+              >
+              <span class="shrink-0 text-sm font-semibold tabular-nums"
+                >{formatCurrency(seller.amount)}</span
+              >
+            </li>
+          {/each}
+        </ul>
+        {#if cashSellers.length > CASH_SELLERS_SHOWN}
+          <details class="mt-1">
+            <summary
+              class="cursor-pointer text-caption font-semibold text-steel"
+              >其他 {cashSellers.length - CASH_SELLERS_SHOWN} 家</summary
+            >
+            <ul class="divide-y divide-ink/5">
+              {#each cashSellers.slice(CASH_SELLERS_SHOWN) as seller (seller.seller)}
+                <li class="flex items-baseline justify-between gap-3 py-2">
+                  <span class="min-w-0 truncate text-sm"
+                    >{seller.seller}
+                    <span class="text-caption text-subtle"
+                      >{seller.count} 張</span
+                    ></span
+                  >
+                  <span class="shrink-0 text-sm tabular-nums"
+                    >{formatCurrency(seller.amount)}</span
+                  >
+                </li>
+              {/each}
+            </ul>
+          </details>
+        {/if}
       {/if}
     </section>
 

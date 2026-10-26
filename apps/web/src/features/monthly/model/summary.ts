@@ -39,6 +39,19 @@ export interface PeriodSummary {
   byCategory: Map<string, number>;
   spending: ActivityItem[];
   setAside: SetAsideRow[];
+  /**
+   * Invoices no card or bank entry claimed. They are mostly bought with cash,
+   * which already counts when withdrawn, so they explain the cash instead of
+   * adding to spending.
+   */
+  cashInvoices: ActivityItem[];
+  cashInvoiceTotal: number;
+}
+
+export interface CashInvoiceSeller {
+  seller: string;
+  count: number;
+  amount: number;
 }
 
 export function summarizePeriods(
@@ -55,7 +68,12 @@ export function summarizePeriods(
     keys.map((key) => {
       const setAside: SetAsideRow[] = [];
       const counted: ActivityItem[] = [];
+      const cashInvoices: ActivityItem[] = [];
       for (const item of grouped.get(key)!) {
+        if (item.source === "invoice") {
+          cashInvoices.push(item);
+          continue;
+        }
         const kind = setAsideKind(item);
         const amount = activityAmountTwd(item, rates);
         if (!kind) counted.push(spendingCategory(item));
@@ -99,6 +117,11 @@ export function summarizePeriods(
           byCategory,
           spending,
           setAside,
+          cashInvoices,
+          cashInvoiceTotal: cashInvoices.reduce(
+            (sum, item) => sum + activityFlowAmountTwd(item, "expense", rates),
+            0,
+          ),
         },
       ];
     }),
@@ -114,4 +137,23 @@ export function rankCategories(summaries: PeriodSummary[]) {
   return [...totals.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([category, total]) => ({ category, total }));
+}
+
+/** Cash invoices grouped by seller, biggest total first. */
+export function cashInvoiceSellers(
+  invoices: ActivityItem[],
+  rates: Record<string, number>,
+): CashInvoiceSeller[] {
+  const sellers = new Map<string, CashInvoiceSeller>();
+  for (const item of invoices) {
+    const seller = sellers.get(item.title) ?? {
+      seller: item.title,
+      count: 0,
+      amount: 0,
+    };
+    seller.count += 1;
+    seller.amount += activityFlowAmountTwd(item, "expense", rates);
+    sellers.set(item.title, seller);
+  }
+  return [...sellers.values()].sort((a, b) => b.amount - a.amount);
 }
