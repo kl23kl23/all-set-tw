@@ -58,6 +58,7 @@
     invoice: "發票",
   };
   const SET_ASIDE_LABELS: Record<SetAsideKind, string> = {
+    investment: "股市交割",
     "top-up": "電子支付儲值",
     "card-payment": "繳信用卡費",
   };
@@ -153,7 +154,7 @@
   const takeaway = $derived.by(() => {
     if (summary.spending.length === 0) return "這一期還沒有消費紀錄。";
     const parts = [
-      `${monthLabel(selectedPeriod)}份${selectedPeriod === currentPeriod ? "目前" : ""}支出 ${formatCurrency(summary.expense)}`,
+      `${monthLabel(selectedPeriod)}份${selectedPeriod === currentPeriod ? "目前" : ""}其他開銷 ${formatCurrency(summary.expense)}`,
     ];
     if (previous && previous.expense > 0)
       parts.push(
@@ -352,19 +353,17 @@
     </section>
 
     <section
-      class="grid grid-cols-2 gap-3 lg:grid-cols-5"
+      class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
       aria-label="本期數字"
     >
-      <div class="col-span-2 rounded-xl border border-ink/10 p-4 lg:col-span-1">
-        <p class="text-caption text-subtle">本期支出</p>
+      <div class="col-span-2 rounded-xl border border-ink/10 p-4 md:col-span-1">
+        <p class="text-caption text-subtle">本期其他開銷</p>
         <p
           class="mt-1 text-2xl font-semibold tracking-tight text-coral tabular-nums"
         >
           {formatCurrency(summary.expense)}
         </p>
-        <p class="mt-1 text-caption text-subtle">
-          收入 {formatCurrency(summary.income)}
-        </p>
+        <p class="mt-1 text-caption text-subtle">不含投資交割、儲值、繳卡費</p>
       </div>
       <div class="rounded-xl border border-ink/10 p-4">
         <p class="text-caption text-subtle">每期平均</p>
@@ -387,11 +386,20 @@
         </p>
       </div>
       <div class="rounded-xl border border-ink/10 p-4">
+        <p class="text-caption text-subtle">股市交割扣款</p>
+        <p class="mt-1 text-xl font-semibold tracking-tight tabular-nums">
+          {formatCurrency(summary.investmentOut)}
+        </p>
+        <p class="mt-1 text-caption text-subtle">
+          本期入帳 {formatCurrency(summary.investmentIn)}
+        </p>
+      </div>
+      <div class="rounded-xl border border-ink/10 p-4">
         <p class="text-caption text-subtle">電子支付儲值</p>
         <p class="mt-1 text-xl font-semibold tracking-tight tabular-nums">
           {formatCurrency(summary.topUp)}
         </p>
-        <p class="mt-1 text-caption text-subtle">本期，另列不算支出</p>
+        <p class="mt-1 text-caption text-subtle">本期，另列</p>
       </div>
       <div class="rounded-xl border border-ink/10 p-4">
         <p class="text-caption text-subtle">信用卡繳款</p>
@@ -404,13 +412,13 @@
 
     <div class="grid min-w-0 gap-6 xl:grid-cols-2">
       <section class="min-w-0 border-t border-ink/10 pt-5">
-        <h2 class="text-base font-semibold">每期支出（依類別）</h2>
+        <h2 class="text-base font-semibold">每期其他開銷（依類別）</h2>
         <p class="mt-1 text-caption text-subtle">點長條切換期別</p>
         <div class="mt-4 grid grid-cols-6 gap-1 md:gap-3">
           {#each chartBars as bar (bar.key)}
             <button
               aria-pressed={selectedPeriod === bar.key}
-              aria-label={`${monthLabel(bar.key)}份支出 ${formatCurrency(bar.total)}`}
+              aria-label={`${monthLabel(bar.key)}份其他開銷 ${formatCurrency(bar.total)}`}
               class={`grid min-w-0 justify-items-center px-1 pb-2 pt-3 text-center transition ${selectedPeriod === bar.key ? "bg-ink/4 shadow-[inset_0_-2px_0_var(--color-steel)]" : "hover:bg-ink/3"}`}
               onclick={() => choosePeriod(bar.key)}
             >
@@ -514,7 +522,7 @@
     <section class="min-w-0 border-t border-ink/10 pt-5">
       <h2 class="text-base font-semibold">另列項目</h2>
       <p class="mt-1 text-caption text-subtle">
-        電子支付儲值與信用卡繳款只是把錢移到別處，真正的消費已在刷卡或支付明細裡，不重複算進支出
+        股市交割、電子支付儲值與信用卡繳款只是把錢移到別處，不算進其他開銷
       </p>
       {#if summary.setAside.length === 0}
         <p class="mt-3 text-sm text-subtle">本期沒有另列項目。</p>
@@ -534,7 +542,7 @@
               </div>
               <span
                 class="shrink-0 text-sm font-semibold tabular-nums text-subtle"
-                >{formatCurrency(row.amount)}</span
+                >{row.amount > 0 ? "+" : ""}{formatCurrency(row.amount)}</span
               >
             </li>
           {/each}
@@ -549,7 +557,7 @@
     >
       <h2 class="text-base font-semibold">逐筆明細</h2>
       <p class="mt-1 text-caption text-subtle">
-        {monthLabel(selectedPeriod)}份支出，點欄位標題可排序
+        {monthLabel(selectedPeriod)}份其他開銷，點欄位標題可排序
       </p>
       <div class="mt-3 grid gap-2 sm:grid-cols-[auto_auto_1fr]">
         <Select

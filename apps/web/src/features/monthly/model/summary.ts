@@ -6,26 +6,30 @@ import {
 import {
   activityAmountTwd,
   activityFlowAmountTwd,
-  activityFlowTotalTwd,
 } from "@/features/activity/model/chart";
 import { periodKeyForDate } from "./period";
 
 /** System rules that mark money moved aside rather than spent. */
 const TOP_UP_RULE = "system:bank:e-wallet-transfer";
 const CARD_PAYMENT_RULE = "system:bank:creditcard-payment";
+const INVESTMENT_CATEGORY = "investment";
 
-export type SetAsideKind = "top-up" | "card-payment";
+export type SetAsideKind = "investment" | "top-up" | "card-payment";
 
 export interface SetAsideRow {
   item: ActivityItem;
   kind: SetAsideKind;
+  /** Signed TWD amount: negative leaves the account, positive arrives. */
   amount: number;
 }
 
 export interface PeriodSummary {
   key: string;
   income: number;
+  /** Spending outside investments, wallet top-ups and card payments. */
   expense: number;
+  investmentOut: number;
+  investmentIn: number;
   topUp: number;
   cardPayment: number;
   byCategory: Map<string, number>;
@@ -33,9 +37,15 @@ export interface PeriodSummary {
   setAside: SetAsideRow[];
 }
 
-/** Money leaving a bank account into a wallet or a card bill: listed apart, not spent. */
+/**
+ * Bank entries that move money elsewhere instead of buying something: stock
+ * settlements, wallet top-ups and card bill payments. The period lists them
+ * apart even when the activity page still counts them.
+ */
 export function setAsideKind(item: ActivityItem): SetAsideKind | null {
-  if (item.source !== "bank" || (item.amount ?? 0) >= 0) return null;
+  if (item.source !== "bank" || !item.amount) return null;
+  if (item.categoryId === INVESTMENT_CATEGORY) return "investment";
+  if (item.amount > 0) return null;
   if (item.classificationRuleId === TOP_UP_RULE) return "top-up";
   if (item.classificationRuleId === CARD_PAYMENT_RULE) return "card-payment";
   return null;
@@ -53,8 +63,16 @@ export function summarizePeriods(
 
   return new Map(
     keys.map((key) => {
-      const periodItems = grouped.get(key)!;
-      const spending = periodItems.filter(
+      const setAside: SetAsideRow[] = [];
+      const counted: ActivityItem[] = [];
+      for (const item of grouped.get(key)!) {
+        const kind = setAsideKind(item);
+        const amount = activityAmountTwd(item, rates);
+        if (!kind) counted.push(item);
+        else if (amount != null) setAside.push({ item, kind, amount });
+      }
+
+      const spending = counted.filter(
         (item) =>
           !item.excludedFromCalculation && activityCashFlow(item) === "expense",
       );
@@ -65,25 +83,24 @@ export function summarizePeriods(
           (byCategory.get(item.category) ?? 0) +
             activityFlowAmountTwd(item, "expense", rates),
         );
-
-      const setAside = periodItems.flatMap((item) => {
-        const kind = setAsideKind(item);
-        const amount = activityAmountTwd(item, rates);
-        return kind && amount != null
-          ? [{ item, kind, amount: Math.abs(amount) }]
-          : [];
-      });
-      const setAsideTotal = (kind: SetAsideKind) =>
+      const flowTotal = (flow: "income" | "expense") =>
+        counted.reduce(
+          (sum, item) => sum + activityFlowAmountTwd(item, flow, rates),
+          0,
+        );
+      const setAsideTotal = (kind: SetAsideKind, sign: 1 | -1 = -1) =>
         setAside
-          .filter((row) => row.kind === kind)
-          .reduce((sum, row) => sum + row.amount, 0);
+          .filter((row) => row.kind === kind && Math.sign(row.amount) === sign)
+          .reduce((sum, row) => sum + Math.abs(row.amount), 0);
 
       return [
         key,
         {
           key,
-          income: activityFlowTotalTwd(periodItems, "income", rates),
-          expense: activityFlowTotalTwd(periodItems, "expense", rates),
+          income: flowTotal("income"),
+          expense: flowTotal("expense"),
+          investmentOut: setAsideTotal("investment"),
+          investmentIn: setAsideTotal("investment", 1),
           topUp: setAsideTotal("top-up"),
           cardPayment: setAsideTotal("card-payment"),
           byCategory,

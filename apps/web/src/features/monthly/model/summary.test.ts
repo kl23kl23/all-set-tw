@@ -29,8 +29,23 @@ describe("period summary", () => {
       date: "2026-10-21",
       amount: -3000,
       category: "轉帳",
-      excludedFromCalculation: true,
       classificationRuleId: "system:bank:e-wallet-transfer",
+    }),
+    item({
+      id: "g",
+      source: "bank",
+      date: "2026-10-23",
+      amount: -120000,
+      category: "投資",
+      categoryId: "investment",
+    }),
+    item({
+      id: "h",
+      source: "bank",
+      date: "2026-10-24",
+      amount: 30000,
+      category: "投資",
+      categoryId: "investment",
     }),
     item({
       id: "f",
@@ -50,11 +65,15 @@ describe("period summary", () => {
     expect(summaries.get("2026-10")!.income).toBe(50000);
   });
 
-  it("lists wallet top-ups and card payments apart from spending", () => {
+  it("lists settlements, wallet top-ups and card payments apart from spending", () => {
     const october = summaries.get("2026-10")!;
+    expect(october.investmentOut).toBe(120000);
+    expect(october.investmentIn).toBe(30000);
     expect(october.topUp).toBe(3000);
     expect(october.cardPayment).toBe(8000);
     expect(october.spending.map((row) => row.id)).toEqual(["b", "c"]);
+    expect(october.expense).toBe(700);
+    expect(october.income).toBe(50000);
   });
 
   it("ranks categories across periods", () => {
