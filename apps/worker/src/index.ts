@@ -24,6 +24,7 @@ import {
 import { accessMiddleware } from "./middleware/access";
 import { safelyKickAiClassification } from "./features/classification/ai-service";
 import { connectorContextMiddleware } from "./middleware/connector-context";
+import { sameOriginMiddleware } from "./middleware/same-origin";
 import type { Env, SyncQueueMessage } from "./platform/env";
 import { honoFactory } from "./platform/hono";
 import {
@@ -38,6 +39,7 @@ export { FubonEgress } from "./platform/fubon-egress-object";
 export const app = honoFactory.createApp();
 export const api = honoFactory.createApp();
 
+api.use("*", sameOriginMiddleware);
 api.use("*", accessMiddleware);
 api.use("*", demoReadOnlyMiddleware);
 api.use("/connectors/:connectorId/*", connectorContextMiddleware);
